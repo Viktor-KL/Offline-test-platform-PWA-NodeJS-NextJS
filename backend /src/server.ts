@@ -1,21 +1,43 @@
-import http from 'http'
+import http, { ServerResponse } from 'http'
 import { router } from './router';
-
+import { logger } from './middleware/logger';
+import { cors } from './middleware/cors';
+import { bodyParser } from './middleware/bodyParser';
+import { AppRequest, Middleware } from './types';
 
 const PORT = 4000
+
+function runMiddleware(
+    middlewares: Middleware[],
+    req: AppRequest,
+    res: ServerResponse,
+    final: () => void
+) {
+    let i = 0
+
+    const next = () => {
+        if (i < middlewares.length) {
+            middlewares[i++](req, res, next)
+        } else {
+            final()
+        }
+    }
+
+    next()
+}
 
 router.get('/api/health', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ status: 'ok' }))
 })
 
-router.post('/api/test', (req, res) => {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ message: 'POST works!' }));
-});
-
-const server = http.createServer((req, res) => {
-    router.hanlde(req, res)
+const server = http.createServer((req: AppRequest, res) => {
+    runMiddleware(
+        [logger, cors, bodyParser],
+        req, 
+        res,
+        () => router.hanlde(req, res)
+    )
 })
 
 server.listen(PORT, () => {

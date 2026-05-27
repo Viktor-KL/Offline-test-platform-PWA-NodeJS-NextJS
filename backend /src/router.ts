@@ -1,6 +1,7 @@
-import { IncomingMessage, ServerResponse } from 'http'
+import { ServerResponse } from 'http'
+import { AppRequest } from './types'
 
-type Handler = (req: IncomingMessage, res: ServerResponse) => void
+type Handler = (req: AppRequest, res: ServerResponse) => void
 
 interface Route {
     method: string,
@@ -9,6 +10,25 @@ interface Route {
 }
 
 const routes: Route[] = []
+
+function mathPath(routePath: string, requestUrl: string): Record<string, string> | null {
+    const routeParts = routePath.split('/')
+    const urlParts = requestUrl.split('?')[0].split('/')
+
+    if (routeParts.length !== urlParts.length) return null
+
+    const params: Record<string, string> = {}
+
+    for (let i = 0; i < routeParts.length; i++) {
+        if (routeParts[i].startsWith(':')) {
+            params[routeParts[i].slice(1)] = urlParts[i]
+        } else if (routeParts[i] !== urlParts[i]) {
+            return null
+        }
+    }
+
+    return params
+}
 
 export const router = {
     get(path: string, handler: Handler) {
@@ -19,16 +39,20 @@ export const router = {
         routes.push({ method: 'POST', path, handler });
     },
 
-    hanlde(req: IncomingMessage, res: ServerResponse) {
-        const route = routes.find(
-            (r) => r.method === req.method && r.path === req.url
-        )
+    hanlde(req: AppRequest, res: ServerResponse) {
+        for (const route of routes) {
+            if (route.method !== req.method) continue
 
-        if (route) {
-            route.handler(req, res)
-        } else {
-            res.writeHead(404, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Route not found' }));
+            const params = mathPath(route.path, req.url ?? '')
+
+            if (params !== null) {
+                req.params = params
+                route.handler(req, res)
+                return
+            }
         }
+
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Route not found' }));
     }
 }
