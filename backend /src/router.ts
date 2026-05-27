@@ -11,7 +11,7 @@ interface Route {
 
 const routes: Route[] = []
 
-function mathPath(routePath: string, requestUrl: string): Record<string, string> | null {
+function matchPath(routePath: string, requestUrl: string): Record<string, string> | null {
     const routeParts = routePath.split('/')
     const urlParts = requestUrl.split('?')[0].split('/')
 
@@ -39,11 +39,11 @@ export const router = {
         routes.push({ method: 'POST', path, handler });
     },
 
-    hanlde(req: AppRequest, res: ServerResponse) {
+    handle(req: AppRequest, res: ServerResponse) {
         for (const route of routes) {
             if (route.method !== req.method) continue
 
-            const params = mathPath(route.path, req.url ?? '')
+            const params = matchPath(route.path, req.url ?? '')
 
             if (params !== null) {
                 req.params = params

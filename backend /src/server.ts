@@ -4,6 +4,7 @@ import { logger } from './middleware/logger';
 import { cors } from './middleware/cors';
 import { bodyParser } from './middleware/bodyParser';
 import { AppRequest, Middleware } from './types';
+import { getPool } from './db/connection';
 
 const PORT = 4000
 
@@ -34,12 +35,18 @@ router.get('/api/health', (req, res) => {
 const server = http.createServer((req: AppRequest, res) => {
     runMiddleware(
         [logger, cors, bodyParser],
-        req, 
+        req,
         res,
-        () => router.hanlde(req, res)
+        () => router.handle(req, res)
     )
 })
 
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+});
+
+getPool().query('SELECT 1').then(() => {
+    console.log('Database connected');
+}).catch((err) => {
+    console.error('Database connection failed:', err.message);
 });
