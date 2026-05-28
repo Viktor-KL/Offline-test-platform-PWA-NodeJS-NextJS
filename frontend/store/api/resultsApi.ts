@@ -13,7 +13,7 @@ interface Result {
 
 export const resultsApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
-        submitResult: builder.mutation<Result, { test_id: number; score: number; answers: Record<string, string> }>({
+        submitResult: builder.mutation<Result, { test_id: number; answers: Record<string, string> }>({
             query: (body) => ({
                 url: '/results',
                 method: 'POST',

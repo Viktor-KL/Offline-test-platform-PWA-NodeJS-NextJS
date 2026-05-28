@@ -20,7 +20,6 @@ export function useOfflineSync() {
                 try {
                     await submitResult({
                         test_id: result.test_id,
-                        score: result.score,
                         answers: result.answers,
                     }).unwrap();
 

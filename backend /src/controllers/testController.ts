@@ -31,7 +31,8 @@ export const testController = {
             }
 
             const questions = await testRepository.findQuestionByTestId(id);
-            return sendJson(res, 200, { ...test, questions });
+            const safeQuestions = questions.map(({ correct_answer: _, ...q }) => q);
+            return sendJson(res, 200, { ...test, questions: safeQuestions });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Server error';
             return sendJson(res, 500, { error: message });

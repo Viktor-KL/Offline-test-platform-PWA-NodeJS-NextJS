@@ -1,6 +1,7 @@
 import { ServerResponse } from 'http';
 import { AppRequest } from '../types';
 import { resultRepository } from '../repositories/resultRepository';
+import { testRepository } from '../repositories/testRepository';
 
 function sendJson(res: ServerResponse, status: number, data: unknown) {
     res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -10,12 +11,23 @@ function sendJson(res: ServerResponse, status: number, data: unknown) {
 export const resultController = {
     async create(req: AppRequest, res: ServerResponse) {
         try {
-            const { test_id, score, answers } = req.body;
+            const { test_id, answers } = req.body;
             const user_id = req.userId;
 
-            if (!user_id || !test_id || score === undefined || !answers) {
+            if (!user_id || !test_id || !answers) {
                 return sendJson(res, 400, { error: 'Missing required fields' });
             }
+
+            const questions = await testRepository.findQuestionByTestId(test_id);
+            if (!questions.length) {
+                return sendJson(res, 404, { error: 'Test not found' });
+            }
+
+            let correct = 0;
+            questions.forEach(q => {
+                if (answers[String(q.id)] === q.correct_answer) correct++;
+            });
+            const score = Math.round((correct / questions.length) * 100);
 
             const result = await resultRepository.create({ user_id, test_id, score, answers });
             return sendJson(res, 201, result);

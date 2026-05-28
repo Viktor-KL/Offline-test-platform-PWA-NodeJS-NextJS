@@ -20,7 +20,7 @@ export default function TestPage() {
     const [answers, setAnswers] = useState<Record<string, string>>({});
     const [currentIndex, setCurrentIndex] = useState(0);
     const [animKey, setAnimKey] = useState(0);
-    const [submitted, setSubmitted] = useState(false);
+    const [submitted, setSubmitted] = useState<false | 'online' | 'offline'>(false);
     const [score, setScore] = useState(0);
     const [submitResult] = useSubmitResultMutation();
 
@@ -47,24 +47,18 @@ export default function TestPage() {
     const handleSubmit = async () => {
         if (!test) return;
 
-        let correct = 0;
-        test.questions.forEach(q => {
-            if (answers[String(q.id)] === q.correct_answer) correct++;
-        });
-
-        const finalScore = Math.round((correct / test.questions.length) * 100);
-        setScore(finalScore);
-        setSubmitted(true);
-
         if (isOnline) {
-            await submitResult({ test_id: Number(id), score: finalScore, answers }).unwrap();
+            const result = await submitResult({ test_id: Number(id), answers }).unwrap();
+            setScore(result.score);
+            setSubmitted('online');
         } else {
             await offlineDB.savePendingResult({
                 test_id: Number(id),
-                score: finalScore,
+                score: 0,
                 answers,
                 created_at: new Date().toISOString(),
             });
+            setSubmitted('offline');
         }
     };
 
@@ -97,45 +91,64 @@ export default function TestPage() {
         );
     }
 
-    if (submitted) {
-        const correct = test.questions.filter(q => answers[String(q.id)] === q.correct_answer).length;
-        const isPassing = score >= 70;
-
+    if (submitted === 'offline') {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
                 <div className="backdrop-blur-xl bg-white/60 border border-white/80 rounded-3xl shadow-2xl shadow-indigo-100/50 p-8 max-w-md w-full text-center space-y-6 animate-question">
+                    <div className="w-20 h-20 rounded-full bg-orange-100 mx-auto flex items-center justify-center text-3xl">
+                        📡
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800">Submitted Offline</h1>
+                        <p className="text-sm text-orange-500 mt-1">Your result will be scored on reconnect</p>
+                    </div>
+                    <div className="bg-white/60 rounded-2xl p-4 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-gray-500">Test</span>
+                            <span className="font-medium text-gray-800">{test.title}</span>
+                        </div>
+                        <div className="flex justify-between mt-2">
+                            <span className="text-gray-500">Questions answered</span>
+                            <span className="font-medium text-gray-800">{test.questions.length} / {test.questions.length}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 text-sm text-orange-600">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
+                        </svg>
+                        Score will appear in My Results after sync
+                    </div>
+                    <button
+                        onClick={() => router.push('/dashboard')}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-medium shadow-lg shadow-indigo-200 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                    >
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
+    if (submitted === 'online') {
+        const isPassing = score >= 70;
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                <div className="backdrop-blur-xl bg-white/60 border border-white/80 rounded-3xl shadow-2xl shadow-indigo-100/50 p-8 max-w-md w-full text-center space-y-6 animate-question">
                     <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center text-3xl ${isPassing ? 'bg-green-100' : 'bg-orange-100'}`}>
                         {isPassing ? '🎉' : '📚'}
                     </div>
-
                     <div>
                         <h1 className="text-4xl font-bold text-gray-800">{score}%</h1>
                         <p className={`text-sm font-medium mt-1 ${isPassing ? 'text-green-600' : 'text-orange-500'}`}>
                             {isPassing ? 'Great job!' : 'Keep practicing!'}
                         </p>
                     </div>
-
-                    <div className="bg-white/60 rounded-2xl p-4 space-y-2">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Correct answers</span>
-                            <span className="font-medium text-gray-800">{correct} / {test.questions.length}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
+                    <div className="bg-white/60 rounded-2xl p-4 text-sm">
+                        <div className="flex justify-between">
                             <span className="text-gray-500">Test</span>
                             <span className="font-medium text-gray-800">{test.title}</span>
                         </div>
                     </div>
-
-                    {!isOnline && (
-                        <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 text-sm text-orange-600">
-                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
-                            </svg>
-                            Result will sync when you're back online
-                        </div>
-                    )}
-
                     <button
                         onClick={() => router.push('/dashboard')}
                         className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-medium shadow-lg shadow-indigo-200 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"

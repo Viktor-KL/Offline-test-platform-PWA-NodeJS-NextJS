@@ -12,8 +12,6 @@ interface Question {
     test_id: number;
     text: string;
     options: string[];
-    correct_answer: string;
-    order_index: number;
 }
 
 interface TestWithQuestions extends Test {

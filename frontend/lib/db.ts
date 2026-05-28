@@ -18,7 +18,6 @@ export interface CachedTest {
         id: number;
         text: string;
         options: string[];
-        correct_answer: string;
     }[];
 }
 
