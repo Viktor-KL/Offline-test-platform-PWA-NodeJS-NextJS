@@ -27,6 +27,9 @@ export default function DashboardPage() {
                 >
                     Logout
                 </button>
+                <Link href="/results" className="text-blue-500 text-sm">
+                    View my results
+                </Link>
             </div>
 
             <h2 className="text-xl font-semibold mb-4">Available Tests</h2>
