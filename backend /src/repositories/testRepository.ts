@@ -10,21 +10,21 @@ export const testRepository = {
         return result.rows
     },
 
-    async findById(id: number): Promise<Question[]> {
+    async findById(id: number): Promise<Test | null> {
         const pool = getPool()
         const result = await pool.query(
             'SELECT * FROM tests WHERE id = $1',
             [id]
         )
-        return result.rows
+        return result.rows[0] || null
     },
 
-    async findQuestionByTestId(testId: number): Promise<Test | null> {
+    async findQuestionByTestId(testId: number): Promise<Question[]> {
         const pool = getPool()
         const result = await pool.query(
             'SELECT * FROM questions WHERE test_id = $1 ORDER BY order_index',
             [testId]
         )
-        return result.rows[0] || null
+        return result.rows
     }
 }
