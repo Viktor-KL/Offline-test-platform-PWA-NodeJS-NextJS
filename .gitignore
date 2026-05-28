@@ -4,3 +4,5 @@ dist/
 backend/.env
 frontend/.env
 .claude
+.gitignore
+CLAUDE.md

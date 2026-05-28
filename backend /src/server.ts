@@ -5,6 +5,7 @@ import { cors } from './middleware/cors';
 import { bodyParser } from './middleware/bodyParser';
 import { AppRequest, Middleware } from './types';
 import { getPool } from './db/connection';
+import { authController } from './controllers/authController';
 
 const PORT = 4000
 
@@ -31,6 +32,11 @@ router.get('/api/health', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ status: 'ok' }))
 })
+
+router.post('/api/auth/register', authController.register);
+router.post('/api/auth/login', authController.login);
+router.post('/api/auth/refresh', authController.refresh);
+router.post('/api/auth/logout', authController.logout);
 
 const server = http.createServer((req: AppRequest, res) => {
     runMiddleware(
