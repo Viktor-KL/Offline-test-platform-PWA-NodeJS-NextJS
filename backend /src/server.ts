@@ -8,6 +8,7 @@ import { getPool } from './db/connection';
 import { authController } from './controllers/authController';
 import { testController } from './controllers/testController';
 import { authMiddleware } from './middleware/auth';
+import { resultController } from './controllers/resultController';
 
 const PORT = 4000
 
@@ -41,6 +42,8 @@ router.post('/api/auth/refresh', authController.refresh);
 router.post('/api/auth/logout', authController.logout);
 router.get('/api/tests', testController.getAll, authMiddleware);
 router.get('/api/tests/:id', testController.getById, authMiddleware);
+router.post('/api/results', resultController.create, authMiddleware);
+router.get('/api/results', resultController.getByUser, authMiddleware);
 
 const server = http.createServer((req: AppRequest, res) => {
     runMiddleware(
