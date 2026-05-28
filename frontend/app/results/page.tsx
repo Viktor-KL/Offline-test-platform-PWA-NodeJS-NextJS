@@ -90,7 +90,7 @@ export default function ResultsPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <p className="font-medium text-gray-800">Test #{result.test_id}</p>
+                                        <p className="font-medium text-gray-800">{result.test_title}</p>
                                         {result.synced_at === null && (
                                             <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
                                                 Pending sync

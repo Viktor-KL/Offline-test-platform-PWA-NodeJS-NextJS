@@ -2,6 +2,7 @@ export interface Result {
     id: number;
     user_id: number;
     test_id: number;
+    test_title: string;
     score: number;
     answers: Record<string, string>;
     created_at: Date;

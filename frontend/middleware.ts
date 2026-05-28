@@ -9,6 +9,10 @@ export function middleware(request: NextRequest) {
 
     const hasRefreshToken = request.cookies.has('refreshToken');
 
+    if (pathname === '/') {
+        return NextResponse.redirect(new URL(hasRefreshToken ? '/dashboard' : '/login', request.url));
+    }
+
     const isProtected = protectedRoutes.some(route => pathname.startsWith(route));
     const isPublic = publicRoutes.some(route => pathname.startsWith(route));
 
@@ -24,5 +28,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/dashboard/:path*', '/results/:path*', '/tests/:path*', '/login', '/register'],
+    matcher: ['/', '/dashboard/:path*', '/results/:path*', '/tests/:path*', '/login', '/register'],
 };

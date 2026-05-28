@@ -14,7 +14,11 @@ export const resultRepository = {
     async findByUserId(userId: number): Promise<Result[]> {
         const pool = getPool();
         const result = await pool.query(
-            'SELECT * FROM results WHERE user_id = $1',
+            `SELECT r.*, t.title as test_title
+             FROM results r
+             JOIN tests t ON r.test_id = t.id
+             WHERE r.user_id = $1
+             ORDER BY r.created_at DESC`,
             [userId]
         );
         return result.rows;
