@@ -3,6 +3,7 @@ import { IncomingMessage, ServerResponse } from 'http';
 export interface AppRequest extends IncomingMessage {
     body?: any;
     params?: Record<string, string>;
+    userId?: number;
 }
 
 export type Next = () => void

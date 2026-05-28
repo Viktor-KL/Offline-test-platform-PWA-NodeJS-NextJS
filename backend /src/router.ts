@@ -1,12 +1,13 @@
 import { ServerResponse } from 'http'
-import { AppRequest } from './types'
+import { AppRequest, Middleware } from './types'
 
 type Handler = (req: AppRequest, res: ServerResponse) => void
 
 interface Route {
     method: string,
     path: string,
-    handler: Handler
+    handler: Handler,
+    middleware?: Middleware[]
 }
 
 const routes: Route[] = []
@@ -31,12 +32,12 @@ function matchPath(routePath: string, requestUrl: string): Record<string, string
 }
 
 export const router = {
-    get(path: string, handler: Handler) {
-        routes.push({ method: 'GET', path, handler })
+    get(path: string, handler: Handler, ...middleware: Middleware[]) {
+        routes.push({ method: 'GET', path, handler, middleware });
     },
 
-    post(path: string, handler: Handler) {
-        routes.push({ method: 'POST', path, handler });
+    post(path: string, handler: Handler, ...middleware: Middleware[]) {
+        routes.push({ method: 'POST', path, handler, middleware });
     },
 
     handle(req: AppRequest, res: ServerResponse) {
@@ -47,8 +48,22 @@ export const router = {
 
             if (params !== null) {
                 req.params = params
-                route.handler(req, res)
-                return
+            
+                if (route.middleware && route.middleware.length > 0) {
+                    let i = 0;
+                    const next = () => {
+                        if (i < route.middleware!.length) {
+                            route.middleware![i++](req, res, next);
+                        } else {
+                            route.handler(req, res);
+                        }
+                    };
+                    next();
+                } else {
+                    route.handler(req, res);
+                }
+            
+                return;
             }
         }
 

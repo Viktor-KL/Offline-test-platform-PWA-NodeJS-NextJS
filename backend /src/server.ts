@@ -6,6 +6,7 @@ import { bodyParser } from './middleware/bodyParser';
 import { AppRequest, Middleware } from './types';
 import { getPool } from './db/connection';
 import { authController } from './controllers/authController';
+import { authMiddleware } from './middleware/auth';
 
 const PORT = 4000
 
@@ -37,6 +38,10 @@ router.post('/api/auth/register', authController.register);
 router.post('/api/auth/login', authController.login);
 router.post('/api/auth/refresh', authController.refresh);
 router.post('/api/auth/logout', authController.logout);
+router.get('/api/protected', (req: AppRequest, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: `Hello user ${req.userId}` }));
+}, authMiddleware);
 
 const server = http.createServer((req: AppRequest, res) => {
     runMiddleware(
