@@ -18,6 +18,8 @@ export default function TestPage() {
 
     const [offlineTest, setOfflineTest] = useState<CachedTest | null>(null);
     const [answers, setAnswers] = useState<Record<string, string>>({});
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [animKey, setAnimKey] = useState(0);
     const [submitted, setSubmitted] = useState(false);
     const [score, setScore] = useState(0);
     const [submitResult] = useSubmitResultMutation();
@@ -25,19 +27,21 @@ export default function TestPage() {
     const test = isOnline ? onlineTest : offlineTest;
 
     useEffect(() => {
-        if (isOnline && onlineTest) {
-            offlineDB.saveTests([onlineTest]);
-        }
+        if (isOnline && onlineTest) offlineDB.saveTests([onlineTest]);
     }, [isOnline, onlineTest]);
 
     useEffect(() => {
-        if (!isOnline) {
-            offlineDB.getTestById(Number(id)).then(setOfflineTest);
-        }
+        if (!isOnline) offlineDB.getTestById(Number(id)).then(setOfflineTest);
     }, [isOnline, id]);
 
     const handleAnswer = (questionId: string, answer: string) => {
         setAnswers(prev => ({ ...prev, [questionId]: answer }));
+    };
+
+    const handleNext = () => {
+        if (!test) return;
+        setCurrentIndex(i => i + 1);
+        setAnimKey(k => k + 1);
     };
 
     const handleSubmit = async () => {
@@ -53,11 +57,7 @@ export default function TestPage() {
         setSubmitted(true);
 
         if (isOnline) {
-            await submitResult({
-                test_id: Number(id),
-                score: finalScore,
-                answers,
-            }).unwrap();
+            await submitResult({ test_id: Number(id), score: finalScore, answers }).unwrap();
         } else {
             await offlineDB.savePendingResult({
                 test_id: Number(id),
@@ -68,68 +68,180 @@ export default function TestPage() {
         }
     };
 
-    if (isLoading && isOnline) return <div className="p-8">Loading...</div>;
-    if (!test) return <div className="p-8">Test not available offline</div>;
-
-    if (submitted) {
+    if (isLoading && isOnline) {
         return (
-            <div className="max-w-2xl mx-auto p-8 text-center">
-                <h1 className="text-3xl font-bold mb-4">Result: {score}%</h1>
-                {!isOnline && (
-                    <p className="text-orange-500 mb-4">
-                        You are offline. Result will sync when connection is restored.
-                    </p>
-                )}
-                <button
-                    onClick={() => router.push('/dashboard')}
-                    className="bg-blue-500 text-white px-6 py-2 rounded"
-                >
-                    Back to Dashboard
-                </button>
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <svg className="animate-spin w-8 h-8 text-indigo-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <p className="text-gray-500 text-sm">Loading test...</p>
+                </div>
             </div>
         );
     }
 
-    return (
-        <div className="max-w-2xl mx-auto p-8">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-2xl font-bold">{test.title}</h1>
-                <span className={`text-sm ${isOnline ? 'text-green-500' : 'text-orange-500'}`}>
-                    {isOnline ? '🟢 Online' : '🔴 Offline'}
-                </span>
+    if (!test) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                <div className="backdrop-blur-xl bg-white/60 border border-white/80 rounded-3xl p-8 text-center max-w-sm w-full">
+                    <p className="text-gray-600 mb-4">Test not available offline</p>
+                    <button onClick={() => router.push('/dashboard')} className="text-indigo-600 font-medium">
+                        Back to Dashboard
+                    </button>
+                </div>
             </div>
+        );
+    }
 
-            <div className="flex flex-col gap-8">
-                {test.questions.map((question, index) => (
-                    <div key={question.id}>
-                        <p className="font-medium mb-3">
-                            {index + 1}. {question.text}
+    if (submitted) {
+        const correct = test.questions.filter(q => answers[String(q.id)] === q.correct_answer).length;
+        const isPassing = score >= 70;
+
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                <div className="backdrop-blur-xl bg-white/60 border border-white/80 rounded-3xl shadow-2xl shadow-indigo-100/50 p-8 max-w-md w-full text-center space-y-6 animate-question">
+
+                    <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center text-3xl ${isPassing ? 'bg-green-100' : 'bg-orange-100'}`}>
+                        {isPassing ? '🎉' : '📚'}
+                    </div>
+
+                    <div>
+                        <h1 className="text-4xl font-bold text-gray-800">{score}%</h1>
+                        <p className={`text-sm font-medium mt-1 ${isPassing ? 'text-green-600' : 'text-orange-500'}`}>
+                            {isPassing ? 'Great job!' : 'Keep practicing!'}
                         </p>
-                        <div className="flex flex-col gap-2">
-                            {question.options.map(option => (
-                                <button
-                                    key={option}
-                                    onClick={() => handleAnswer(String(question.id), option)}
-                                    className={`text-left p-3 rounded border ${answers[String(question.id)] === option
-                                            ? 'bg-blue-500 text-white border-blue-500'
-                                            : 'hover:bg-gray-50'
-                                        }`}
-                                >
-                                    {option}
-                                </button>
-                            ))}
+                    </div>
+
+                    <div className="bg-white/60 rounded-2xl p-4 space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Correct answers</span>
+                            <span className="font-medium text-gray-800">{correct} / {test.questions.length}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Test</span>
+                            <span className="font-medium text-gray-800">{test.title}</span>
                         </div>
                     </div>
-                ))}
-            </div>
 
-            <button
-                onClick={handleSubmit}
-                disabled={Object.keys(answers).length !== test.questions.length}
-                className="mt-8 w-full bg-green-500 text-white p-3 rounded disabled:opacity-50"
-            >
-                Submit Test
-            </button>
+                    {!isOnline && (
+                        <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 text-sm text-orange-600">
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 110 18A9 9 0 0112 3z" />
+                            </svg>
+                            Result will sync when you're back online
+                        </div>
+                    )}
+
+                    <button
+                        onClick={() => router.push('/dashboard')}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-medium shadow-lg shadow-indigo-200 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                    >
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    const question = test.questions[currentIndex];
+    const isLast = currentIndex === test.questions.length - 1;
+    const currentAnswer = answers[String(question.id)];
+    const progress = ((currentIndex) / test.questions.length) * 100;
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex flex-col">
+
+            {/* Header */}
+            <header className="backdrop-blur-xl bg-white/60 border-b border-white/80 sticky top-0 z-10">
+                <div className="max-w-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+                    <div>
+                        <p className="text-xs text-gray-500 font-medium">{test.title}</p>
+                        <p className="text-sm font-semibold text-gray-800">
+                            Question {currentIndex + 1} of {test.questions.length}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${isOnline ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-orange-500'}`} />
+                            {isOnline ? 'Online' : 'Offline'}
+                        </span>
+                        <button
+                            onClick={() => router.push('/dashboard')}
+                            className="text-sm text-gray-500 hover:text-gray-800 transition-colors px-3 py-1.5 rounded-xl hover:bg-white/60"
+                        >
+                            Exit
+                        </button>
+                    </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="h-1 bg-gray-100">
+                    <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 transition-all duration-500 ease-out"
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
+            </header>
+
+            {/* Question */}
+            <main className="flex-1 flex items-center justify-center p-4">
+                <div className="w-full max-w-2xl">
+                    <div key={animKey} className="animate-question space-y-6">
+
+                        {/* Question card */}
+                        <div className="backdrop-blur-xl bg-white/60 border border-white/80 rounded-3xl shadow-sm p-6 sm:p-8">
+                            <p className="text-lg sm:text-xl font-semibold text-gray-800 leading-relaxed">
+                                {question.text}
+                            </p>
+                        </div>
+
+                        {/* Options */}
+                        <div className="space-y-3">
+                            {question.options.map((option, i) => {
+                                const isSelected = currentAnswer === option;
+                                const letters = ['A', 'B', 'C', 'D'];
+                                return (
+                                    <button
+                                        key={option}
+                                        onClick={() => handleAnswer(String(question.id), option)}
+                                        className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all duration-200 ${
+                                            isSelected
+                                                ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-200 scale-[1.01]'
+                                                : 'backdrop-blur-xl bg-white/60 border-white/80 text-gray-700 hover:bg-white/80 hover:scale-[1.01] active:scale-[0.99]'
+                                        }`}
+                                    >
+                                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold flex-shrink-0 transition-colors ${
+                                            isSelected ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'
+                                        }`}>
+                                            {letters[i]}
+                                        </span>
+                                        <span className="font-medium">{option}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => router.push('/dashboard')}
+                                className="px-5 py-3 rounded-xl border border-gray-200 bg-white/60 backdrop-blur-xl text-gray-600 font-medium hover:bg-white/80 transition-all duration-200 text-sm"
+                            >
+                                Exit test
+                            </button>
+                            <button
+                                onClick={isLast ? handleSubmit : handleNext}
+                                disabled={!currentAnswer}
+                                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-medium shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
+                            >
+                                {isLast ? 'Complete test' : 'Next question →'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
     );
 }
