@@ -19,7 +19,7 @@ export const authController = {
             const result = await authService.register(name, email, password);
 
             res.setHeader('Set-Cookie', [
-                `refreshToken=${result.refreshToken}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}`,
+                `refreshToken=${result.refreshToken}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}${process.env.NODE_ENV === 'production' ? '; Secure; SameSite=Lax' : ''}`,
             ]);
 
             return sendJson(res, 201, {
@@ -43,7 +43,7 @@ export const authController = {
             const result = await authService.login(email, password);
 
             res.setHeader('Set-Cookie', [
-                `refreshToken=${result.refreshToken}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}`,
+                `refreshToken=${result.refreshToken}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}${process.env.NODE_ENV === 'production' ? '; Secure; SameSite=Lax' : ''}`,
             ]);
 
             return sendJson(res, 200, {

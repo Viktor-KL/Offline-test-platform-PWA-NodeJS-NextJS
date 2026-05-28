@@ -16,8 +16,6 @@ export function useOfflineSync() {
             const pending = await offlineDB.getPendingResults();
             if (pending.length === 0) return;
 
-            console.log(`Syncing ${pending.length} offline results...`);
-
             for (const result of pending) {
                 try {
                     await submitResult({
@@ -27,9 +25,8 @@ export function useOfflineSync() {
                     }).unwrap();
 
                     await offlineDB.markResultSynced(result.id);
-                    console.log(`Result ${result.id} synced`);
-                } catch (err) {
-                    console.error(`Failed to sync result ${result.id}`, err);
+                } catch {
+                    // будет повторная попытка при следующем подключении
                 }
             }
         };

@@ -82,11 +82,13 @@ export default function TestPage() {
         );
     }
 
-    if (!test) {
+    if (!test || test.questions.length === 0) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
                 <div className="backdrop-blur-xl bg-white/60 border border-white/80 rounded-3xl p-8 text-center max-w-sm w-full">
-                    <p className="text-gray-600 mb-4">Test not available offline</p>
+                    <p className="text-4xl mb-3">📵</p>
+                    <p className="text-gray-600 font-medium mb-1">Test not available offline</p>
+                    <p className="text-gray-400 text-sm mb-4">Open this test while online to cache it</p>
                     <button onClick={() => router.push('/dashboard')} className="text-indigo-600 font-medium">
                         Back to Dashboard
                     </button>
@@ -148,7 +150,7 @@ export default function TestPage() {
     const question = test.questions[currentIndex];
     const isLast = currentIndex === test.questions.length - 1;
     const currentAnswer = answers[String(question.id)];
-    const progress = ((currentIndex) / test.questions.length) * 100;
+    const progress = ((currentIndex + 1) / test.questions.length) * 100;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex flex-col">

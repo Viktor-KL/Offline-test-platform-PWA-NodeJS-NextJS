@@ -19,7 +19,6 @@ export interface CachedTest {
         text: string;
         options: string[];
         correct_answer: string;
-        order_index: number;
     }[];
 }
 
