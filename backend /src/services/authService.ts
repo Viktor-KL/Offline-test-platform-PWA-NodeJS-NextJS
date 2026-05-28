@@ -57,7 +57,7 @@ export const authService = {
 
             const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '15m' });
 
-            return { accessToken };
+            return { accessToken, user: { id: user.id, name: user.name, email: user.email } };
         } catch {
             throw new Error('Invalid refresh token');
         }
