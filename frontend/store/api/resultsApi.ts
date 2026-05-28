@@ -19,10 +19,12 @@ export const resultsApi = baseApi.injectEndpoints({
                 method: 'POST',
                 body,
             }),
+            invalidatesTags: ['Results'],
         }),
 
         getMyResults: builder.query<Result[], void>({
             query: () => '/results',
+            providesTags: ['Results'],
         }),
     }),
 });

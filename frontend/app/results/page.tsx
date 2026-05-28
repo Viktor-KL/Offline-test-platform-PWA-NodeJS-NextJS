@@ -1,10 +1,23 @@
 'use client';
 
 import { useGetMyResultsQuery } from '@/store/api/resultsApi';
+import { useLogoutUserMutation } from '@/store/api/authApi';
+import { useAppSelector } from '@/store/hooks';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 export default function ResultsPage() {
     const { data: results, isLoading } = useGetMyResultsQuery();
+    const [logoutUser] = useLogoutUserMutation();
+    const user = useAppSelector(state => state.auth.user);
+    const router = useRouter();
+    const isOnline = useOnlineStatus();
+
+    const handleLogout = async () => {
+        await logoutUser();
+        router.push('/login');
+    };
 
     const avgScore = results && results.length > 0
         ? Math.round(results.reduce((acc, r) => acc + r.score, 0) / results.length)
@@ -19,21 +32,36 @@ export default function ResultsPage() {
 
             {/* Header */}
             <header className="backdrop-blur-xl bg-white/60 border-b border-white/80 sticky top-0 z-10">
-                <div className="max-w-2xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-                    <Link
-                        href="/dashboard"
-                        className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 transition-colors text-sm"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Back
-                    </Link>
-                    <h1 className="text-lg font-semibold text-gray-800">My Results</h1>
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                        </div>
+                        <span className="font-semibold text-gray-800">TestApp</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className={`hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium ${isOnline ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-orange-500'}`} />
+                            {isOnline ? 'Online' : 'Offline'}
+                        </span>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors px-3 py-1.5 rounded-xl hover:bg-white/60"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            <span className="hidden sm:block">Sign out</span>
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+            <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 pb-28 sm:pb-8 space-y-6">
+
+                <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800">My Results</h1>
 
                 {/* Stats */}
                 {results && results.length > 0 && (
@@ -115,6 +143,22 @@ export default function ResultsPage() {
                     })}
                 </div>
             </main>
+
+            {/* Mobile bottom nav */}
+            <nav className="sm:hidden fixed bottom-0 left-0 right-0 backdrop-blur-xl bg-white/70 border-t border-white/80 px-6 pb-6 pt-3 flex justify-around">
+                <Link href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span className="text-xs font-medium">Home</span>
+                </Link>
+                <button className="flex flex-col items-center gap-1 text-indigo-600">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span className="text-xs font-medium">Results</span>
+                </button>
+            </nav>
         </div>
     );
 }
