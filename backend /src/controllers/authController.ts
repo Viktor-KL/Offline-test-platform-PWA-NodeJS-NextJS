@@ -16,7 +16,20 @@ export const authController = {
                 return sendJson(res, 400, { error: 'Name, email and password are required' });
             }
 
-            const result = await authService.register(name, email, password);
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return sendJson(res, 400, { error: 'Invalid email format' });
+            }
+
+            if (password.length < 6) {
+                return sendJson(res, 400, { error: 'Password must be at least 6 characters' });
+            }
+
+            if (name.trim().length < 2 || name.trim().length > 50) {
+                return sendJson(res, 400, { error: 'Name must be between 2 and 50 characters' });
+            }
+
+            const result = await authService.register(name.trim(), email.toLowerCase(), password);
 
             res.setHeader('Set-Cookie', [
                 `refreshToken=${result.refreshToken}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}${process.env.NODE_ENV === 'production' ? '; Secure; SameSite=Lax' : ''}`,
@@ -27,7 +40,7 @@ export const authController = {
                 accessToken: result.accessToken,
             });
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Server error';
+            const message = err instanceof Error ? err.message : 'Registration failed';
             return sendJson(res, 400, { error: message });
         }
     },

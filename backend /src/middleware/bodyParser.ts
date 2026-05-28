@@ -1,21 +1,30 @@
 import { ServerResponse } from 'http';
 import { AppRequest, Next } from '../types';
 
-export const bodyParser = (req: AppRequest, res: ServerResponse, next: Next) => {
-    let data = ''
+const MAX_BODY_SIZE = 1024 * 1024; // 1MB
 
-    req.on('data', (chunk) => {
-        data += chunk.toString()
-    })
+export const bodyParser = (req: AppRequest, res: ServerResponse, next: Next) => {
+    let data = '';
+    let size = 0;
+
+    req.on('data', (chunk: Buffer) => {
+        size += chunk.length;
+        if (size > MAX_BODY_SIZE) {
+            res.writeHead(413, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Request body too large' }));
+            return;
+        }
+        data += chunk.toString();
+    });
 
     req.on('end', () => {
         if (data) {
             try {
-                req.body = JSON.parse(data)
+                req.body = JSON.parse(data);
             } catch {
-                req.body = {}
+                req.body = {};
             }
         }
-        next()
-    })
+        next();
+    });
 }
