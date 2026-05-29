@@ -20,7 +20,7 @@ A fullstack quiz application built as a portfolio showcase. Students can take te
 - Next.js 16 (App Router)
 - Redux Toolkit + RTK Query
 - Tailwind CSS v4
-- PWA (next-pwa) with service worker
+- PWA (`@ducanh2912/next-pwa`) with service worker + App Router offline fallback
 - IndexedDB for offline storage
 
 **Infrastructure**
@@ -57,8 +57,11 @@ AuthInitializer (refresh token check)
 
 - **RTK Query** handles all API calls with auto token injection via `prepareHeaders`
 - **AuthInitializer** — blocks render until `/auth/refresh` completes, preventing race conditions on page reload
-- **useOfflineSync** — on reconnect, fetches pending results from IndexedDB and submits them to the server
-- **IndexedDB** (`lib/db.ts`) — stores: cached tests with questions, pending offline results
+- **useOfflineSync** — on reconnect, fetches pending results from IndexedDB and submits them to the server (which scores them)
+- **IndexedDB** (`lib/db.ts`) — three independent object stores, each owned by one screen to avoid overwrites:
+  - `testList` — lightweight list metadata (id/title/description), written by the dashboard for offline browsing
+  - `tests` — full tests **with questions**, written by the test page for offline taking
+  - `pendingResults` — answers submitted offline, awaiting sync
 
 ### Auth Flow
 
@@ -71,11 +74,16 @@ Login → Access token (Redux memory) + Refresh token (httpOnly cookie)
 ### Offline Flow
 
 ```
-Online visit → Test cached in IndexedDB
-Go offline  → Take test from IndexedDB cache
-            → Result saved to IndexedDB as pending
+Online visit → Test list cached (testList) + opened tests cached with questions (tests)
+             → Service worker caches the app shell + /~offline fallback page
+Go offline  → Dashboard list served from IndexedDB; take a cached test from IndexedDB
+            → Result saved to IndexedDB as pending (score placeholder)
 Come online → useOfflineSync auto-submits pending results
+            → Server calculates the real score; RTK Query refreshes the UI
 ```
+
+Pages in the App Router are server-rendered and aren't in the precache manifest, so any
+uncached navigation falls back to the precached `/~offline` page instead of a hard error.
 
 ---
 
@@ -138,11 +146,11 @@ CI/CD: GitHub Actions automatically deploys on every push to `main` via SSH.
 **Why raw Node.js?**
 To demonstrate understanding of how HTTP servers, routing, and middleware work at the framework level — not just how to use them.
 
-**Client-side scoring**
-Test scores are calculated in the browser. This is a deliberate trade-off to support the offline mode: without internet, the server can't verify answers. In a high-stakes exam system, server-side scoring with offline result queuing would be required.
+**Server-side scoring**
+Scores are calculated on the server in `resultController`, never in the browser. The `/api/tests/:id` endpoint strips `correct_answer` from every question, so the client never sees the answer key. Offline submissions store the raw answers with a placeholder score and are scored by the server on sync — the offline mode stays secure without trusting the client.
 
-**Correct answers in API response**
-The `/api/tests/:id` endpoint returns `correct_answer` for each question — necessary for offline scoring. A production exam platform would handle this server-side or use a separate verification endpoint.
+**My Results offline**
+The results list isn't cached in IndexedDB (only pending submissions are), so "My Results" is empty without a connection. Caching the last-seen results for read-only offline display would be a straightforward extension.
 
 ---
 

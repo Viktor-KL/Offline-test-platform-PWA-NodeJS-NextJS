@@ -27,7 +27,7 @@ export default function TestPage() {
     const test = isOnline ? onlineTest : offlineTest;
 
     useEffect(() => {
-        if (isOnline && onlineTest) offlineDB.saveTests([onlineTest]);
+        if (isOnline && onlineTest) offlineDB.saveTest(onlineTest);
     }, [isOnline, onlineTest]);
 
     useEffect(() => {
@@ -160,10 +160,13 @@ export default function TestPage() {
         );
     }
 
-    const question = test.questions[currentIndex];
-    const isLast = currentIndex === test.questions.length - 1;
+    // Защита от рассинхрона: если источник теста сменился (офлайн → онлайн)
+    // и индекс вышел за границы нового массива вопросов — прижимаем к последнему.
+    const safeIndex = Math.min(currentIndex, test.questions.length - 1);
+    const question = test.questions[safeIndex];
+    const isLast = safeIndex === test.questions.length - 1;
     const currentAnswer = answers[String(question.id)];
-    const progress = ((currentIndex + 1) / test.questions.length) * 100;
+    const progress = ((safeIndex + 1) / test.questions.length) * 100;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex flex-col">
@@ -174,7 +177,7 @@ export default function TestPage() {
                     <div>
                         <p className="text-xs text-gray-500 font-medium">{test.title}</p>
                         <p className="text-sm font-semibold text-gray-800">
-                            Question {currentIndex + 1} of {test.questions.length}
+                            Question {safeIndex + 1} of {test.questions.length}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">

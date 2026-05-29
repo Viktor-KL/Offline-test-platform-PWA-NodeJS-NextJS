@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   keywords: ["quiz", "test", "offline", "learning", "pwa"],
   authors: [{ name: "Viktor" }],
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "QuizApp — Offline Test Platform",
     description: "Take knowledge tests online and offline. Results sync automatically when you reconnect.",
@@ -26,12 +30,17 @@ export const metadata: Metadata = {
     siteName: "QuizApp",
     type: "website",
   },
-  themeColor: "#6366f1",
   appleWebApp: {
     capable: true,
     title: "QuizApp",
     statusBarStyle: "default",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#6366f1",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

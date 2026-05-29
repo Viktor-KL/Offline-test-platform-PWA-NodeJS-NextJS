@@ -1,28 +1,41 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { useGetTestsQuery } from '@/store/api/testsApi';
 import { useGetMyResultsQuery } from '@/store/api/resultsApi';
 import { useLogoutUserMutation } from '@/store/api/authApi';
 import { useRouter } from 'next/navigation';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { offlineDB } from '@/lib/db';
+import { offlineDB, CachedTestMeta } from '@/lib/db';
 import Link from 'next/link';
 
 export default function DashboardPage() {
     const user = useAppSelector(state => state.auth.user);
-    const { data: tests, isLoading } = useGetTestsQuery();
-    const { data: results } = useGetMyResultsQuery();
-    const [logoutUser] = useLogoutUserMutation();
-    const router = useRouter();
     const isOnline = useOnlineStatus();
 
+    // Сетевые запросы делаем только онлайн — офлайн они бы упали с ошибкой.
+    const { data: onlineTests, isLoading } = useGetTestsQuery(undefined, { skip: !isOnline });
+    const { data: results } = useGetMyResultsQuery(undefined, { skip: !isOnline });
+    const [logoutUser] = useLogoutUserMutation();
+    const router = useRouter();
+
+    // Офлайн-список тестов из IndexedDB.
+    const [offlineTests, setOfflineTests] = useState<CachedTestMeta[] | null>(null);
+
+    // Онлайн: кэшируем мету списка для будущих офлайн-сессий.
     useEffect(() => {
-        if (tests && tests.length > 0 && isOnline) {
-            offlineDB.saveTests(tests.map(t => ({ ...t, questions: [] })));
+        if (isOnline && onlineTests && onlineTests.length > 0) {
+            offlineDB.saveTestList(onlineTests);
         }
-    }, [tests, isOnline]);
+    }, [isOnline, onlineTests]);
+
+    // Офлайн: подтягиваем закэшированный список.
+    useEffect(() => {
+        if (!isOnline) offlineDB.getTestList().then(setOfflineTests);
+    }, [isOnline]);
+
+    const tests = isOnline ? onlineTests : offlineTests;
 
     const handleLogout = async () => {
         await logoutUser();
@@ -72,7 +85,7 @@ export default function DashboardPage() {
                 {/* Greeting */}
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800">
-                        Good day, {user?.name} 👋
+                        Good day{user?.name ? `, ${user.name}` : ''} 👋
                     </h1>
                     <p className="text-gray-500 mt-1 text-sm">Ready to learn something new today?</p>
                 </div>
