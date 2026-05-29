@@ -4,6 +4,12 @@ A fullstack quiz application built as a portfolio showcase. Students can take te
 
 **Live demo → [quiz-offline-platform.site](https://quiz-offline-platform.site)**
 
+> **Testing offline mode:** the offline experience runs through the installed PWA, so it's
+> best checked on a phone. Open the site, **Add to Home Screen**, then browse the dashboard
+> and open the tests you want **while online once** (this warms the cache). After that you can
+> turn off your connection, launch the app from the home-screen icon, take a cached test, and
+> watch the result sync when you reconnect.
+
 ---
 
 ## Stack
