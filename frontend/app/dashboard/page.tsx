@@ -53,14 +53,14 @@ export default function DashboardPage() {
             {/* Header */}
             <header className="backdrop-blur-xl bg-white/60 border-b border-white/80 sticky top-0 z-10">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
+                    <Link href="/dashboard" className="flex items-center gap-3 group">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
                             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
                         </div>
                         <span className="font-semibold text-gray-800">TestApp</span>
-                    </div>
+                    </Link>
 
                     <div className="flex items-center gap-3">
                         <span className={`hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium ${isOnline ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
